@@ -17,8 +17,8 @@ GEMINI_ENABLED = False
 
 
 
-OLLAMA_BASE_URL = "http://localhost:11434/v1"
-OLLAMA_MODEL = "llama3:8b"
+OLLAMA_URL =  "http://localhost:11434/api/chat"
+OLLAMA_MODEL = "mistral-ctx:latest"
 
     
 GEMINI_MODEL = "models/gemini-2.0-flash"  

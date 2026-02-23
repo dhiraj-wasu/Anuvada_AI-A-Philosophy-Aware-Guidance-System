@@ -239,3 +239,6 @@ Anuvada is built on the principle that **wisdom systems must preserve truth befo
 It is a **philosophy-aware retrieval system** that respects textual authority, preserves doctrinal boundaries, and delivers guidance with integrity.
 
 .
+<p align="center">
+  <img src="output_img/image copy.png" width="500"/>
+</p>

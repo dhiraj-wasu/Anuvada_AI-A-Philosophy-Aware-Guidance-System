@@ -4,6 +4,13 @@ import os
 from typing import Optional
 from google import genai
 
+from app.config import (
+    LOCAL_LLM_ENABLED,
+    GEMINI_ENABLED,
+    OLLAMA_URL,
+    OLLAMA_MODEL,
+    GEMINI_MODEL,
+)
 
 # Models (override from env if you want)
 # OPENAI_ROUTER_MODEL = os.getenv("OPENAI_ROUTER_MODEL", "gpt-4o-mini")
@@ -151,17 +158,6 @@ import os
 from typing import Optional
 import requests
 from google import genai
-
-from app.config import (
-    LOCAL_LLM_ENABLED,
-    GEMINI_ENABLED,
-    OLLAMA_BASE_URL,
-    OLLAMA_MODEL,
-    GEMINI_MODEL,
-)
-
-
-
 # -------------------------------------------------
 # LOCAL OLLAMA CALL
 # -------------------------------------------------
@@ -170,24 +166,26 @@ import requests
 
 def call_ollama(user_prompt: str) -> str:
     payload = {
-        "model": "llama3:8b",
+        "model": OLLAMA_MODEL,      # use your installed model
         "messages": [
             {"role": "system", "content": SYSTEM_MESSAGE},
             {"role": "user", "content": user_prompt}
         ],
         "temperature": 0.0,
-        "stream": False   # 🔑 THIS FIXES YOUR ERROR
+        "stream": False
     }
+
     print("📡 Sending request to local Ollama router...")
+
     r = requests.post(
-        "http://localhost:11434/api/chat",
+        OLLAMA_URL,   # ✅ FIXED ENDPOINT
         json=payload,
         timeout=180
     )
 
     r.raise_for_status()
 
-    data = r.json()   # now safe
+    data = r.json()
 
     return data["message"]["content"].strip()
 

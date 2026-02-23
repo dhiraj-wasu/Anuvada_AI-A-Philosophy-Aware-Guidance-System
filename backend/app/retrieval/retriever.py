@@ -67,7 +67,7 @@ def retrieve(
     query: str,
     router_topics: Optional[List[str]] = None,
     router_keywords: Optional[List[str]] = None,
-    top_k: int = 2,
+    top_k: int = 1,
     threshold: float = 0.2
 ) -> List[dict]:
 

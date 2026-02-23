@@ -6,7 +6,7 @@ from google import genai
 from app.config import (
     LOCAL_LLM_ENABLED,
     GEMINI_ENABLED,
-    OLLAMA_BASE_URL,
+    OLLAMA_URL,
     OLLAMA_MODEL,
     GEMINI_MODEL,
 )
@@ -37,66 +37,62 @@ def generate(context_chunks: List[dict], question: str) -> str:
         for c in baba_quotes[:6]
     )
     print(context_text)
-    prompt = f"""
-You are NOT allowed to invent explanations.
-
-RULES (STRICT):
-- Use ONLY Meher Baba’s words from the context
-- Quote Baba clearly
-- Do NOT add philosophy
-- Do NOT add new ideas
-- Do NOT explain beyond the quotes
-- After quoting, give a VERY SIMPLE human explanation
-- Relate it gently to the user's problem
-- If something is not in context, say exactly:
-  "Meher Baba has not spoken directly on this."
-
-FORMAT (STRICT):
-
-1) Baba's Words (quoted)
-2) Simple Meaning (1–2 lines)
-3) How this helps the person
-
-CONTEXT (AUTHORITATIVE):
-{context_text}
-
-USER QUESTION:
-{question}
-"""
-
-    # --------------------------------------------------
-    # 3️⃣ LOCAL OLLAMA FIRST
-    # --------------------------------------------------
+    prompt = f""" You are NOT allowed to invent explanations.
+      RULES (STRICT):
+        - Use ONLY Meher Baba’s words from the context 
+        - Quote Baba clearly - Do NOT add philosophy 
+        - Do NOT add new ideas 
+        - Do NOT explain beyond the quotes 
+        - After quoting, give a VERY SIMPLE human explanation 
+        - Relate it gently to the user's problem 
+        - If something is not in context, say exactly: "Meher Baba has not spoken directly on this."
+        FORMAT (STRICT): 1) Baba's Words (quoted) 2) Simple Meaning (1–2 lines) 3) How this helps the person CONTEXT (AUTHORITATIVE):
+        {context_text} 
+        USER QUESTION: {question} """
     if LOCAL_LLM_ENABLED:
-        try:
-            print("🟢 Using LOCAL Ollama explainer")
+      try:
+        print("🟢 Using LOCAL Ollama explainer")
 
-            payload = {
-                "model": OLLAMA_MODEL,
-                "messages": [
-                    {"role": "system", "content": "You are a strict spiritual text explainer."},
-                    {"role": "user", "content": prompt}
-                ],
-                "temperature": 0.2
-            }
+        payload = {
+            "model": OLLAMA_MODEL,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a strict spiritual text explainer.\n"
+                        "Use ONLY the provided quotes.\n"
+                        "Do NOT add new ideas."
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.2,
+            "stream": False 
+        }
 
-            r = requests.post(
-             "http://localhost:11434/api/chat",
-                json=payload,
-                timeout=60
+        r = requests.post(
+            OLLAMA_URL,     # should be http://localhost:11434/api/chat
+            json=payload,
+            timeout=(5, 180)   # ✅ IMPORTANT UPGRADE
+        )
+
+        r.raise_for_status()
+
+        data = r.json()
+
+        if "message" not in data:
+            raise RuntimeError(f"Unexpected Ollama response: {data}")
+
+        return data["message"]["content"].strip()   # ✅ FIXED
+
+      except Exception as local_err:
+        print("⚠️ Ollama explainer failed:", local_err)
+
+        if not GEMINI_ENABLED:
+            return (
+                "Meher Baba has not spoken directly on this question "
+                "in the available authoritative texts."
             )
-
-            r.raise_for_status()
-            return r.json()["choices"][0]["message"]["content"].strip()
-
-        except Exception as local_err:
-            print("⚠️ Ollama explainer failed:", local_err)
-
-            if not GEMINI_ENABLED:
-                return (
-                    "Meher Baba has not spoken directly on this question "
-                    "in the available authoritative texts."
-                )
 
     # --------------------------------------------------
     # 4️⃣ GEMINI FALLBACK (OPTIONAL)
